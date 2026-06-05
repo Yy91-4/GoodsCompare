@@ -5,9 +5,12 @@ DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'goodscompare
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    if DB_PATH == ':memory:':
+        conn = sqlite3.connect('file::memory:?cache=shared', uri=True)
+    else:
+        conn = sqlite3.connect(DB_PATH)
+        conn.execute("PRAGMA journal_mode=WAL")
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
     return conn
 
 

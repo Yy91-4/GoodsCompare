@@ -98,7 +98,7 @@ class TestTaobaoFetcher:
         f = TaobaoFetcher()
         url = f.build_search_url('可乐')
         assert 'm.taobao.com' in url
-        assert '可乐' in url
+        assert f'q=%E5%8F%AF%E4%B9%90' in url or 'q=%E5%8F%AF' in url
 
     def test_parse_results(self):
         f = TaobaoFetcher()

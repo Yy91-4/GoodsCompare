@@ -10,9 +10,12 @@ import models
 
 @pytest.fixture
 def db():
-    models.DB_PATH = ':memory:'
+    test_db = os.path.join(os.path.dirname(__file__), '..', 'test_temp.db')
+    models.DB_PATH = test_db
     models.init_db()
     yield
+    if os.path.exists(test_db):
+        os.remove(test_db)
 
 
 class TestInitDB:

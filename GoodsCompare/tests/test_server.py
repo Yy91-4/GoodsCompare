@@ -10,10 +10,13 @@ import models
 
 @pytest.fixture
 def app():
-    models.DB_PATH = ':memory:'
+    test_db = os.path.join(os.path.dirname(__file__), '..', 'test_temp.db')
+    models.DB_PATH = test_db
     models.init_db()
     server.app.config['TESTING'] = True
-    return server.app.test_client()
+    yield server.app.test_client()
+    if os.path.exists(test_db):
+        os.remove(test_db)
 
 
 class TestSearchAPI:
