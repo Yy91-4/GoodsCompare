@@ -1,0 +1,340 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+                 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    color: #333;
+    -webkit-font-smoothing: antialiased;
+}
+
+#app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 16px;
+    padding-bottom: 90px;
+}
+
+/* 顶部标题 */
+header {
+    text-align: center;
+    padding: 24px 0 8px;
+    color: white;
+}
+
+header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.subtitle {
+    font-size: 13px;
+    opacity: 0.8;
+    margin-top: 4px;
+}
+
+/* 搜索框 */
+.search-box {
+    display: flex;
+    gap: 8px;
+    margin: 16px 0 20px;
+}
+
+.search-box input {
+    flex: 1;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    background: rgba(255, 255, 255, 0.95);
+    outline: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.search-box input:focus {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
+}
+
+.search-box button {
+    padding: 12px 24px;
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(255, 107, 107, 0.4);
+    transition: transform 0.1s;
+}
+
+.search-box button:active {
+    transform: scale(0.96);
+}
+
+/* 价格卡片 */
+.card {
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.platform-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: white;
+}
+
+.platform-badge.淘宝闪购 { background: #ff5000; }
+.platform-badge.美团 { background: #ffc300; color: #333; }
+.platform-badge.京东 { background: #e2231a; }
+
+.card h3 {
+    font-size: 15px;
+    font-weight: 500;
+    margin: 6px 0;
+    line-height: 1.4;
+    color: #333;
+}
+
+.price {
+    font-size: 32px;
+    font-weight: 800;
+    color: #e2231a;
+    margin: 8px 0;
+}
+
+.price::before {
+    content: '¥';
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.shop {
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 10px;
+}
+
+.card-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    text-align: center;
+}
+
+.btn-secondary {
+    padding: 8px 16px;
+    background: #f0f0f0;
+    color: #666;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* 验证码卡片 */
+.captcha-card {
+    border: 2px solid #ffc107;
+    background: #fff8e1;
+}
+
+.captcha-card .message {
+    font-size: 14px;
+    color: #f57f17;
+    margin-bottom: 10px;
+}
+
+.manual-input {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.manual-input input {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    outline: none;
+}
+
+.manual-input input:focus {
+    border-color: #667eea;
+}
+
+/* 加载和空状态 */
+.loading {
+    text-align: center;
+    padding: 40px;
+    color: white;
+    font-size: 15px;
+}
+
+.loading .spinner {
+    display: inline-block;
+    width: 30px;
+    height: 30px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 10px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.empty-state .icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+}
+
+.empty-state p {
+    font-size: 15px;
+}
+
+/* 趋势页 */
+.trend-selector {
+    margin-bottom: 16px;
+}
+
+.trend-selector select {
+    width: 100%;
+    padding: 12px 16px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    background: rgba(255, 255, 255, 0.95);
+    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+}
+
+.chart-container {
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.chart-container canvas {
+    width: 100% !important;
+}
+
+/* 收藏列表 */
+.fav-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.fav-item .info {
+    flex: 1;
+}
+
+.fav-item .fav-price {
+    font-size: 22px;
+    font-weight: 700;
+    color: #e2231a;
+}
+
+.fav-item .fav-meta {
+    font-size: 12px;
+    color: #999;
+}
+
+.fav-item .remove-btn {
+    padding: 6px 12px;
+    background: #ff5252;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+/* 底部导航 */
+#bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 6px 16px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 480px;
+    border-radius: 16px 16px 0 0;
+}
+
+#bottom-nav button {
+    flex: 1;
+    padding: 10px 8px;
+    border: none;
+    background: transparent;
+    font-size: 13px;
+    cursor: pointer;
+    border-radius: 10px;
+    transition: background 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    color: #999;
+}
+
+#bottom-nav button .nav-icon {
+    font-size: 20px;
+}
+
+#bottom-nav button.active {
+    background: #667eea;
+    color: white;
+}
+
+/* 响应式微调 */
+@media (max-width: 360px) {
+    #app { padding: 12px; padding-bottom: 80px; }
+    .price { font-size: 26px; }
+    header h1 { font-size: 22px; }
+}
