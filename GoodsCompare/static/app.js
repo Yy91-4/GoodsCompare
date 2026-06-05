@@ -11,13 +11,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// 页面导航
+// ============ 工具函数 ============
+
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function escapeAttr(str) {
+    if (!str) return '';
+    return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function showToast(msg) {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+    const el = document.createElement('div');
+    el.className = 'toast';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2000);
+}
+
+// ============ 页面导航 ============
+
 function setupNavigation() {
     document.querySelectorAll('#bottom-nav button').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const page = btn.dataset.page;
-            navigate(page);
-        });
+        btn.addEventListener('click', () => navigate(btn.dataset.page));
     });
 }
 
@@ -35,7 +57,7 @@ function navigate(page) {
 
 // ============ 搜索页 ============
 
-function renderSearchPage() {
+async function renderSearchPage() {
     const content = document.getElementById('content');
     content.innerHTML = `
         <div class="search-box">
@@ -43,6 +65,7 @@ function renderSearchPage() {
                    autocomplete="off" autofocus>
             <button id="search-btn">搜索</button>
         </div>
+        <div id="history-chips" class="history-chips"></div>
         <div id="search-results"></div>
     `;
 
@@ -50,6 +73,35 @@ function renderSearchPage() {
     document.getElementById('search-input').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') doSearch();
     });
+
+    loadHistoryChips();
+}
+
+async function loadHistoryChips() {
+    const container = document.getElementById('history-chips');
+    try {
+        const resp = await fetch(`${API}/history`);
+        const history = await resp.json();
+        if (history.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+        container.style.display = 'flex';
+        container.innerHTML = history.slice(0, 6).map(h =>
+            `<span class="history-chip" data-query="${escapeAttr(h.query)}">
+                <span class="chip-icon">🕐</span>${escapeHtml(h.query)}
+            </span>`
+        ).join('');
+
+        container.querySelectorAll('.history-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.getElementById('search-input').value = chip.dataset.query;
+                doSearch();
+            });
+        });
+    } catch (e) {
+        container.style.display = 'none';
+    }
 }
 
 async function doSearch() {
@@ -64,8 +116,9 @@ async function doSearch() {
         const resp = await fetch(`${API}/search?q=${encodeURIComponent(query)}`);
         const data = await resp.json();
         renderSearchResults(data, resultsDiv);
+        loadHistoryChips();
     } catch (e) {
-        resultsDiv.innerHTML = `<div class="empty-state"><p>连接失败，请确认服务已启动</p></div>`;
+        resultsDiv.innerHTML = '<div class="empty-state"><div class="icon">📡</div><p>连接失败，请确认服务已启动</p></div>';
     }
 }
 
@@ -75,10 +128,15 @@ function renderSearchResults(data, container) {
         return;
     }
 
+    // 找到最低价
+    const minPrice = Math.min(
+        ...data.results.filter(r => r.status === 'ok').map(r => r.price)
+    );
+
     let html = '';
     data.results.forEach((r, i) => {
         if (r.status === 'ok') {
-            html += renderPriceCard(r);
+            html += renderPriceCard(r, r.price === minPrice);
         } else if (r.status === 'captcha') {
             html += renderCaptchaCard(r);
         } else if (r.status === 'no_result') {
@@ -90,16 +148,16 @@ function renderSearchResults(data, container) {
     container.innerHTML = html;
 }
 
-function renderPriceCard(r) {
+function renderPriceCard(r, isBest) {
     return `
-        <div class="card price-card">
+        <div class="card price-card${isBest ? ' best-price' : ''}">
             <span class="platform-badge ${r.platform}">${r.platform}</span>
             <h3>${escapeHtml(r.product_name)}</h3>
             <p class="price">${r.price.toFixed(2)}</p>
             <p class="shop">${escapeHtml(r.shop || '')}</p>
             <div class="card-actions">
                 ${r.url ? `<a href="${r.url}" target="_blank" rel="noopener" class="btn">去下单</a>` : ''}
-                <button class="btn-secondary" onclick="addToFavorites('${escapeAttr(r.product_name)}', '${escapeAttr(r.platform)}')">收藏</button>
+                <button class="btn-secondary" onclick="addToFavorites('${escapeAttr(r.product_name)}', '${escapeAttr(r.platform)}')">⭐ 收藏</button>
             </div>
         </div>
     `;
@@ -109,11 +167,12 @@ function renderCaptchaCard(r) {
     return `
         <div class="card captcha-card">
             <span class="platform-badge ${r.platform}">${r.platform}</span>
-            <p class="message">⚠ ${r.message}</p>
-            ${r.captcha_url ? `<a href="${r.captcha_url}" target="_blank" rel="noopener" class="btn">去网页完成验证</a>` : ''}
+            <p class="message">⚠ ${escapeHtml(r.message)}</p>
+            ${r.captcha_url ? `<a href="${r.captcha_url}" target="_blank" rel="noopener" class="btn" style="margin-bottom:8px;display:inline-block;">去网页完成验证</a>` : ''}
             <div class="manual-input">
-                <input type="number" step="0.01" placeholder="输入价格" id="price-${escapeAttr(r.platform)}">
-                <button class="btn" onclick="submitManualPrice('${escapeAttr(r.product_name || '')}', '${escapeAttr(r.platform)}')">确认</button>
+                <input type="text" placeholder="商品名" value="${escapeAttr(r.product_name || '')}" id="name-${escapeAttr(r.platform)}">
+                <input type="number" step="0.01" placeholder="价格" id="price-${escapeAttr(r.platform)}">
+                <button class="btn" onclick="submitManualPrice('${escapeAttr(r.platform)}')">确认</button>
             </div>
         </div>
     `;
@@ -121,12 +180,13 @@ function renderCaptchaCard(r) {
 
 function renderNoResultCard(r) {
     return `
-        <div class="card captcha-card">
+        <div class="card no-result-card">
             <span class="platform-badge ${r.platform}">${r.platform}</span>
-            <p class="message">未找到匹配商品</p>
+            <p class="message">未找到匹配商品，可以手动录入价格</p>
             <div class="manual-input">
-                <input type="number" step="0.01" placeholder="手动输入价格" id="price-${escapeAttr(r.platform)}">
-                <button class="btn" onclick="submitManualPrice('', '${escapeAttr(r.platform)}')">确认</button>
+                <input type="text" placeholder="商品名" value="${escapeAttr(r.product_name || '')}" id="name-${escapeAttr(r.platform)}">
+                <input type="number" step="0.01" placeholder="价格" id="price-${escapeAttr(r.platform)}">
+                <button class="btn" onclick="submitManualPrice('${escapeAttr(r.platform)}')">确认</button>
             </div>
         </div>
     `;
@@ -134,30 +194,39 @@ function renderNoResultCard(r) {
 
 function renderErrorCard(r) {
     return `
-        <div class="card captcha-card">
+        <div class="card error-card">
             <span class="platform-badge ${r.platform}">${r.platform}</span>
             <p class="message">⚠ ${escapeHtml(r.message || '请求失败')}</p>
         </div>
     `;
 }
 
-async function submitManualPrice(productName, platform) {
-    const input = document.getElementById(`price-${platform}`);
-    const price = parseFloat(input.value);
+async function submitManualPrice(platform) {
+    const nameInput = document.getElementById(`name-${platform}`);
+    const priceInput = document.getElementById(`price-${platform}`);
+    const productName = nameInput ? nameInput.value.trim() : '';
+    const price = parseFloat(priceInput.value);
+
+    if (!productName) {
+        showToast('请输入商品名');
+        return;
+    }
     if (isNaN(price) || price <= 0) {
-        alert('请输入有效的价格');
+        showToast('请输入有效的价格');
         return;
     }
     try {
-        await fetch(`${API}/price/manual`, {
+        const resp = await fetch(`${API}/price/manual`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ product_name: productName, platform, price })
         });
-        input.value = '';
-        input.placeholder = '已记录 ✓';
+        if (resp.ok) {
+            priceInput.value = '';
+            showToast('已记录 ✓');
+        }
     } catch (e) {
-        alert('记录失败，请重试');
+        showToast('记录失败，请重试');
     }
 }
 
@@ -171,7 +240,7 @@ async function renderFavoritesPage() {
         const resp = await fetch(`${API}/favorites`);
         const favs = await resp.json();
         if (favs.length === 0) {
-            content.innerHTML = '<div class="empty-state"><div class="icon">⭐</div><p>还没有收藏，去搜索页收藏商品吧</p></div>';
+            content.innerHTML = '<div class="empty-state"><div class="icon">⭐</div><p>还没有收藏<br>去搜索页收藏商品吧</p></div>';
             return;
         }
         let html = '';
@@ -201,8 +270,9 @@ async function addToFavorites(productName, platform) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ product_name: productName, platform })
         });
+        showToast('已加入收藏 ★');
     } catch (e) {
-        // 静默失败
+        showToast('收藏失败');
     }
 }
 
@@ -210,8 +280,9 @@ async function removeFavorite(favId) {
     try {
         await fetch(`${API}/favorites/${favId}`, { method: 'DELETE' });
         renderFavoritesPage();
+        showToast('已删除');
     } catch (e) {
-        alert('删除失败');
+        showToast('删除失败');
     }
 }
 
@@ -225,7 +296,7 @@ async function renderTrendPage() {
         const resp = await fetch(`${API}/products`);
         const products = await resp.json();
         if (products.length === 0) {
-            content.innerHTML = '<div class="empty-state"><div class="icon">📈</div><p>还没有数据，先去搜索商品吧</p></div>';
+            content.innerHTML = '<div class="empty-state"><div class="icon">📈</div><p>还没有数据<br>去搜索商品开始记录价格吧</p></div>';
             return;
         }
         content.innerHTML = `
@@ -291,23 +362,14 @@ async function loadTrendChart(productName) {
                     y: {
                         beginAtZero: false,
                         title: { display: true, text: '价格 (¥)' }
+                    },
+                    x: {
+                        ticks: { maxRotation: 45 }
                     }
                 }
             }
         });
     } catch (e) {
-        document.getElementById('chart-area').innerHTML = '<p style="text-align:center;padding:20px;">加载趋势失败</p>';
+        document.getElementById('chart-area').innerHTML = '<p style="text-align:center;padding:20px;color:#999;">加载趋势失败</p>';
     }
-}
-
-// ============ 工具函数 ============
-
-function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-}
-
-function escapeAttr(str) {
-    return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
